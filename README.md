@@ -1,0 +1,14 @@
+# git-remind
+
+Send GitHub pull request reminders to HipChat.
+
+## Install
+```
+go get github.com/goburrow/git-remind
+```
+
+## Usage
+```
+git-remind -config config.json
+```
+See [configuration example](config.json)
