@@ -28,7 +28,8 @@ func main() {
 
 	config := LoadConfig(configPath)
 
-	github := NewGitHubRepository(config.GitHub.Repository)
+	github := NewGitHubRepository()
+	github.AddRepos(config.GitHub.Repositories)
 	if config.GitHub.URL != "" {
 		github.SetURL(config.GitHub.URL, config.GitHub.Insecure)
 	}

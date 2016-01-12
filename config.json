@@ -1,6 +1,6 @@
 {
 	"GitHub": {
-		"Repository": "goburrow/git-remind"
+		"Repositories": ["goburrow/git-remind"]
 	},
 	"HipChat": {
 		"Token": "",

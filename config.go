@@ -8,9 +8,9 @@ import (
 
 type Config struct {
 	GitHub struct {
-		URL        string
-		Insecure   bool
-		Repository string
+		URL          string
+		Insecure     bool
+		Repositories []string
 	}
 	HipChat struct {
 		URL   string

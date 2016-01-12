@@ -62,6 +62,7 @@ func (r *HipChatReminder) Remind(pr []*PullRequest) {
 	}
 
 	url := fmt.Sprintf("%s/room/%s/notification", r.url, r.room)
+	log.Println("sending notification to", url)
 	req, err := http.NewRequest("POST", url, &buf)
 	if err != nil {
 		log.Fatal(err)

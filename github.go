@@ -14,19 +14,31 @@ const (
 )
 
 type GitHubRepository struct {
-	name string
+	repos []string
 
 	url    string
 	client http.Client
 }
 
-func NewGitHubRepository(name string) *GitHubRepository {
+func NewGitHubRepository() *GitHubRepository {
+	return &GitHubRepository{
+		url: githubURL,
+	}
+}
+
+func (r *GitHubRepository) AddRepo(name string) {
 	if name == "" {
 		log.Fatal("empty git repository name")
 	}
-	return &GitHubRepository{
-		url:  githubURL,
-		name: name,
+	r.repos = append(r.repos, name)
+}
+
+func (r *GitHubRepository) AddRepos(names []string) {
+	if len(names) == 0 {
+		log.Fatal("empty git repository name")
+	}
+	for _, n := range names {
+		r.AddRepo(n)
 	}
 }
 
@@ -44,8 +56,16 @@ func (r *GitHubRepository) SetURL(url string, insecure bool) {
 }
 
 func (r *GitHubRepository) PullRequests() []*PullRequest {
-	url := fmt.Sprintf("%s/repos/%s/pulls", r.url, r.name)
-	log.Println("getting PRs at", url)
+	var pulls []*PullRequest
+	for _, n := range r.repos {
+		pulls = append(pulls, r.pullRequests(n)...)
+	}
+	return pulls
+}
+
+func (r *GitHubRepository) pullRequests(name string) []*PullRequest {
+	url := fmt.Sprintf("%s/repos/%s/pulls", r.url, name)
+	log.Println("getting pull requests from", url)
 	resp, err := r.client.Get(url)
 	if err != nil {
 		log.Fatal(err)
