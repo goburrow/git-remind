@@ -20,24 +20,35 @@ type Reminder interface {
 	Remind([]*PullRequest)
 }
 
+func newRepository(c *Config) Repository {
+	github := NewGitHubRepository()
+	github.AddRepos(c.GitHub.Repositories)
+	if c.GitHub.URL != "" {
+		github.SetURL(c.GitHub.URL, c.GitHub.Insecure)
+	}
+	return github
+}
+
+func newReminder(c *Config) Reminder {
+	hipchat := NewHipChatReminder(c.HipChat.Room)
+	if c.HipChat.Token != "" {
+		hipchat.SetToken(c.HipChat.Token)
+	}
+	return hipchat
+}
+
 func main() {
 	var configPath string
 
-	flag.StringVar(&configPath, "config", "~/.git/remind", "Config file path")
+	flag.StringVar(&configPath, "config", "git-remind-config.json", "Config file path")
 	flag.Parse()
 
+	if configPath == "" {
+		flag.Usage()
+		return
+	}
 	config := LoadConfig(configPath)
-
-	github := NewGitHubRepository()
-	github.AddRepos(config.GitHub.Repositories)
-	if config.GitHub.URL != "" {
-		github.SetURL(config.GitHub.URL, config.GitHub.Insecure)
-	}
-	pr := github.PullRequests()
-
-	hipchat := NewHipChatReminder(config.HipChat.Room)
-	if config.HipChat.Token != "" {
-		hipchat.SetToken(config.HipChat.Token)
-	}
-	hipchat.Remind(pr)
+	repository := newRepository(config)
+	reminder := newReminder(config)
+	reminder.Remind(repository.PullRequests())
 }
