@@ -1,6 +1,9 @@
 {
 	"GitHub": {
-		"Repositories": ["goburrow/git-remind"]
+		"Repositories": ["goburrow/git-remind"],
+		"Filter": {
+			"MinAge": "6h"
+		}
 	},
 	"HipChat": {
 		"Token": "",

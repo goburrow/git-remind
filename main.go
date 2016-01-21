@@ -22,9 +22,14 @@ type Reminder interface {
 
 func newRepository(c *Config) Repository {
 	github := NewGitHubRepository()
-	github.AddRepos(c.GitHub.Repositories)
+	for _, url := range c.GitHub.Repositories {
+		github.AddRepo(url)
+	}
 	if c.GitHub.URL != "" {
 		github.SetURL(c.GitHub.URL, c.GitHub.Insecure)
+	}
+	if c.GitHub.Filter.MinAge.Duration > 0 {
+		github.SetMinAge(c.GitHub.Filter.MinAge.Duration)
 	}
 	return github
 }

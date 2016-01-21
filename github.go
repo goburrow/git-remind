@@ -18,6 +18,8 @@ type GitHubRepository struct {
 
 	url    string
 	client http.Client
+
+	minAge time.Duration
 }
 
 func NewGitHubRepository() *GitHubRepository {
@@ -33,13 +35,8 @@ func (r *GitHubRepository) AddRepo(name string) {
 	r.repos = append(r.repos, name)
 }
 
-func (r *GitHubRepository) AddRepos(names []string) {
-	if len(names) == 0 {
-		log.Fatal("empty git repository name")
-	}
-	for _, n := range names {
-		r.AddRepo(n)
-	}
+func (r *GitHubRepository) SetMinAge(minAge time.Duration) {
+	r.minAge = minAge
 }
 
 func (r *GitHubRepository) SetURL(url string, insecure bool) {
@@ -83,17 +80,25 @@ func (r *GitHubRepository) pullRequests(name string) []*PullRequest {
 	}
 	// log.Printf("%+v\n", pulls)
 
-	pr := make([]*PullRequest, len(pulls))
+	pr := make([]*PullRequest, 0, len(pulls))
 	for i := range pulls {
 		p := &pulls[i]
-		pr[i] = &PullRequest{
+		if !r.shouldRemind(p) {
+			log.Printf("skipped repo %s", p.HTMLURL)
+			continue
+		}
+		pr = append(pr, &PullRequest{
 			URL:         p.HTMLURL,
 			Title:       p.Title,
 			Author:      p.User.Login,
 			CreatedTime: p.CreatedAt,
-		}
+		})
 	}
 	return pr
+}
+
+func (r *GitHubRepository) shouldRemind(p *GitHubPulls) bool {
+	return r.minAge == 0 || time.Now().Sub(p.CreatedAt) > r.minAge
 }
 
 type GitHubPulls struct {
