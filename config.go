@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// Config is the model of application configuration.
 type Config struct {
 	GitHub struct {
 		URL          string
@@ -25,6 +26,7 @@ type Config struct {
 	}
 }
 
+// LoadConfig returns a new Config read from given file path.
 func LoadConfig(path string) *Config {
 	f, err := os.Open(path)
 	if err != nil {
@@ -41,10 +43,12 @@ func LoadConfig(path string) *Config {
 	return c
 }
 
+// Duration wraps time.Duration to support unmarshalling from JSON number and string.
 type Duration struct {
 	time.Duration
 }
 
+// UnmarshalJSON parses duration from either number or string.
 func (d *Duration) UnmarshalJSON(b []byte) error {
 	// Check if it's a string
 	var s string

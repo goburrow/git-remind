@@ -14,14 +14,17 @@ const (
 	hipchatURL = "https://api.hipchat.com/v2"
 )
 
+// HipChatReminder reminds pull requests on a HipChat room.
 type HipChatReminder struct {
-	url   string
-	token string
-	room  string
+	Token string
+
+	url  string
+	room string
 
 	client http.Client
 }
 
+// NewHipChatReminder initializes a new HipChatReminder with given room.
 func NewHipChatReminder(room string) *HipChatReminder {
 	if room == "" {
 		log.Fatal("empty hipchat room")
@@ -32,10 +35,7 @@ func NewHipChatReminder(room string) *HipChatReminder {
 	}
 }
 
-func (r *HipChatReminder) SetToken(token string) {
-	r.token = token
-}
-
+// Remind sends a notification for given pull requests.
 func (r *HipChatReminder) Remind(pr []*PullRequest) {
 	if len(pr) == 0 {
 		return
@@ -68,8 +68,8 @@ func (r *HipChatReminder) Remind(pr []*PullRequest) {
 		log.Fatal(err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if r.token != "" {
-		req.Header.Set("Authorization", "Bearer "+r.token)
+	if r.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+r.Token)
 	}
 	res, err := r.client.Do(req)
 	if err != nil {

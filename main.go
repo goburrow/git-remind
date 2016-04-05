@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// PullRequest is data structure returned by Repository
 type PullRequest struct {
 	URL         string
 	Title       string
@@ -12,10 +13,12 @@ type PullRequest struct {
 	CreatedTime time.Time
 }
 
+// Repository returns list of PullRequest.
 type Repository interface {
 	PullRequests() []*PullRequest
 }
 
+// Reminder sends a reminder with given pull requests.
 type Reminder interface {
 	Remind([]*PullRequest)
 }
@@ -38,9 +41,7 @@ func newRepository(c *Config) Repository {
 
 func newReminder(c *Config) Reminder {
 	hipchat := NewHipChatReminder(c.HipChat.Room)
-	if c.HipChat.Token != "" {
-		hipchat.SetToken(c.HipChat.Token)
-	}
+	hipchat.Token = c.HipChat.Token
 	return hipchat
 }
 
