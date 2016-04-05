@@ -26,11 +26,13 @@ func newRepository(c *Config) Repository {
 		github.AddRepo(url)
 	}
 	if c.GitHub.URL != "" {
-		github.SetURL(c.GitHub.URL, c.GitHub.Insecure)
+		github.URL = c.GitHub.URL
 	}
-	if c.GitHub.Filter.MinAge.Duration > 0 {
-		github.SetMinAge(c.GitHub.Filter.MinAge.Duration)
+	if c.GitHub.Insecure {
+		github.Insecure()
 	}
+	github.Token = c.GitHub.Token
+	github.MinAge = c.GitHub.Filter.MinAge.Duration
 	return github
 }
 

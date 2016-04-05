@@ -11,6 +11,7 @@ type Config struct {
 	GitHub struct {
 		URL          string
 		Insecure     bool
+		Token        string
 		Repositories []string
 
 		Filter struct {

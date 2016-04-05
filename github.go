@@ -13,21 +13,24 @@ const (
 	githubURL = "https://api.github.com"
 )
 
+// GitHubRepository retrieves pull requests for given repositories.
 type GitHubRepository struct {
-	repos []string
+	URL    string
+	Token  string
+	MinAge time.Duration
 
-	url    string
+	repos  []string
 	client http.Client
-
-	minAge time.Duration
 }
 
+// NewGitHubRepository initializes a new GitHubRepository with default GitHub URL.
 func NewGitHubRepository() *GitHubRepository {
 	return &GitHubRepository{
-		url: githubURL,
+		URL: githubURL,
 	}
 }
 
+// AddRepo registers repository for checking pull requests.
 func (r *GitHubRepository) AddRepo(name string) {
 	if name == "" {
 		log.Fatal("empty git repository name")
@@ -35,23 +38,16 @@ func (r *GitHubRepository) AddRepo(name string) {
 	r.repos = append(r.repos, name)
 }
 
-func (r *GitHubRepository) SetMinAge(minAge time.Duration) {
-	r.minAge = minAge
-}
-
-func (r *GitHubRepository) SetURL(url string, insecure bool) {
-	r.url = url
-	if insecure {
-		r.client.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: insecure,
-			},
-		}
-	} else {
-		r.client.Transport = nil
+// Insecure skips verify GitHub server certificate.
+func (r *GitHubRepository) Insecure() {
+	r.client.Transport = &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
 	}
 }
 
+// PullRequests returns all pull requests of added repositories.
 func (r *GitHubRepository) PullRequests() []*PullRequest {
 	var pulls []*PullRequest
 	for _, n := range r.repos {
@@ -61,9 +57,21 @@ func (r *GitHubRepository) PullRequests() []*PullRequest {
 }
 
 func (r *GitHubRepository) pullRequests(name string) []*PullRequest {
-	url := fmt.Sprintf("%s/repos/%s/pulls", r.url, name)
+	url := r.URL
+	if url == "" {
+		url = githubURL
+	}
+	url = fmt.Sprintf("%s/repos/%s/pulls", url, name)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if r.Token != "" {
+		req.Header.Set("Authorization", "token "+r.Token)
+	}
+
 	log.Println("getting pull requests from", url)
-	resp, err := r.client.Get(url)
+	resp, err := r.client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,7 +81,7 @@ func (r *GitHubRepository) pullRequests(name string) []*PullRequest {
 	}
 
 	decoder := json.NewDecoder(resp.Body)
-	pulls := make([]GitHubPulls, 0, 5)
+	pulls := make([]gitHubPulls, 0, 5)
 	err = decoder.Decode(&pulls)
 	if err != nil {
 		log.Fatal(err)
@@ -84,7 +92,7 @@ func (r *GitHubRepository) pullRequests(name string) []*PullRequest {
 	for i := range pulls {
 		p := &pulls[i]
 		if !r.shouldRemind(p) {
-			log.Printf("skipped repo %s", p.HTMLURL)
+			log.Printf("skipped pull request %s", p.HTMLURL)
 			continue
 		}
 		pr = append(pr, &PullRequest{
@@ -97,11 +105,11 @@ func (r *GitHubRepository) pullRequests(name string) []*PullRequest {
 	return pr
 }
 
-func (r *GitHubRepository) shouldRemind(p *GitHubPulls) bool {
-	return r.minAge == 0 || time.Now().Sub(p.CreatedAt) > r.minAge
+func (r *GitHubRepository) shouldRemind(p *gitHubPulls) bool {
+	return r.MinAge == 0 || time.Now().Sub(p.CreatedAt) > r.MinAge
 }
 
-type GitHubPulls struct {
+type gitHubPulls struct {
 	HTMLURL string `json:"html_url"`
 	Title   string `json:"title"`
 	User    struct {
