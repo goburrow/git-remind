@@ -36,6 +36,7 @@ func newRepository(c *Config) Repository {
 	}
 	github.Token = c.GitHub.Token
 	github.MinAge = c.GitHub.Filter.MinAge.Duration
+	github.IgnoreAssigned = c.GitHub.Filter.IgnoreAssigned
 	return github
 }
 

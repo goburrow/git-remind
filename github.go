@@ -15,9 +15,11 @@ const (
 
 // GitHubRepository retrieves pull requests for given repositories.
 type GitHubRepository struct {
-	URL    string
-	Token  string
-	MinAge time.Duration
+	URL   string
+	Token string
+
+	MinAge         time.Duration
+	IgnoreAssigned bool
 
 	repos  []string
 	client http.Client
@@ -91,7 +93,7 @@ func (r *GitHubRepository) pullRequests(name string) []*PullRequest {
 	pr := make([]*PullRequest, 0, len(pulls))
 	for i := range pulls {
 		p := &pulls[i]
-		if !r.shouldRemind(p) {
+		if r.shouldIgnore(p) {
 			log.Printf("skipped pull request %s", p.HTMLURL)
 			continue
 		}
@@ -105,8 +107,8 @@ func (r *GitHubRepository) pullRequests(name string) []*PullRequest {
 	return pr
 }
 
-func (r *GitHubRepository) shouldRemind(p *gitHubPulls) bool {
-	return r.MinAge == 0 || time.Now().Sub(p.CreatedAt) > r.MinAge
+func (r *GitHubRepository) shouldIgnore(p *gitHubPulls) bool {
+	return (r.MinAge > 0 && time.Now().Sub(p.CreatedAt) < r.MinAge) || (r.IgnoreAssigned && p.Assignee.Login != "")
 }
 
 type gitHubPulls struct {
@@ -115,5 +117,8 @@ type gitHubPulls struct {
 	User    struct {
 		Login string `json:"login"`
 	} `json:"user"`
+	Assignee struct {
+		Login string `json:"login"`
+	} `json:"assignee"`
 	CreatedAt time.Time `json:"created_at"`
 }

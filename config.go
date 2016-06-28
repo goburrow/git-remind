@@ -16,7 +16,8 @@ type Config struct {
 		Repositories []string
 
 		Filter struct {
-			MinAge Duration
+			MinAge         Duration
+			IgnoreAssigned bool
 		}
 	}
 	HipChat struct {
