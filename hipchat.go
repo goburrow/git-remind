@@ -17,26 +17,14 @@ const (
 // HipChatReminder reminds pull requests on a HipChat room.
 type HipChatReminder struct {
 	Token string
-
-	url  string
-	room string
-
-	client http.Client
-}
-
-// NewHipChatReminder initializes a new HipChatReminder with given room.
-func NewHipChatReminder(room string) *HipChatReminder {
-	if room == "" {
-		log.Fatal("empty hipchat room")
-	}
-	return &HipChatReminder{
-		url:  hipchatURL,
-		room: room,
-	}
+	Room  string
 }
 
 // Remind sends a notification for given pull requests.
 func (r *HipChatReminder) Remind(pr []*PullRequest) {
+	if r.Room == "" {
+		log.Fatal("empty hipchat room")
+	}
 	if len(pr) == 0 {
 		return
 	}
@@ -60,8 +48,7 @@ func (r *HipChatReminder) Remind(pr []*PullRequest) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	url := fmt.Sprintf("%s/room/%s/notification", r.url, r.room)
+	url := fmt.Sprintf("%s/room/%s/notification", hipchatURL, r.Room)
 	log.Println("sending notification to", url)
 	req, err := http.NewRequest("POST", url, &buf)
 	if err != nil {
@@ -71,7 +58,8 @@ func (r *HipChatReminder) Remind(pr []*PullRequest) {
 	if r.Token != "" {
 		req.Header.Set("Authorization", "Bearer "+r.Token)
 	}
-	res, err := r.client.Do(req)
+	client := http.Client{}
+	res, err := client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}

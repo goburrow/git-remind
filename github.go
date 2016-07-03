@@ -15,55 +15,42 @@ const (
 
 // GitHubRepository retrieves pull requests for given repositories.
 type GitHubRepository struct {
-	URL   string
-	Token string
+	URL          string
+	Insecure     bool
+	Token        string
+	Repositories []string
 
-	MinAge         time.Duration
-	IgnoreAssigned bool
-
-	repos  []string
-	client http.Client
-}
-
-// NewGitHubRepository initializes a new GitHubRepository with default GitHub URL.
-func NewGitHubRepository() *GitHubRepository {
-	return &GitHubRepository{
-		URL: githubURL,
-	}
-}
-
-// AddRepo registers repository for checking pull requests.
-func (r *GitHubRepository) AddRepo(name string) {
-	if name == "" {
-		log.Fatal("empty git repository name")
-	}
-	r.repos = append(r.repos, name)
-}
-
-// Insecure skips verify GitHub server certificate.
-func (r *GitHubRepository) Insecure() {
-	r.client.Transport = &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
+	Filter struct {
+		MinAge         Duration
+		IgnoreAssigned bool
 	}
 }
 
 // PullRequests returns all pull requests of added repositories.
 func (r *GitHubRepository) PullRequests() []*PullRequest {
+	baseURL := r.URL
+	if baseURL == "" {
+		baseURL = githubURL
+	}
+	client := http.Client{}
+	if r.Insecure {
+		// Skip verifying GitHub server certificate
+		client.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		}
+	}
+
 	var pulls []*PullRequest
-	for _, n := range r.repos {
-		pulls = append(pulls, r.pullRequests(n)...)
+	for _, n := range r.Repositories {
+		url := fmt.Sprintf("%s/repos/%s/pulls", baseURL, n)
+		pulls = append(pulls, r.pullRequests(&client, url)...)
 	}
 	return pulls
 }
 
-func (r *GitHubRepository) pullRequests(name string) []*PullRequest {
-	url := r.URL
-	if url == "" {
-		url = githubURL
-	}
-	url = fmt.Sprintf("%s/repos/%s/pulls", url, name)
+func (r *GitHubRepository) pullRequests(client *http.Client, url string) []*PullRequest {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Fatal(err)
@@ -73,7 +60,7 @@ func (r *GitHubRepository) pullRequests(name string) []*PullRequest {
 	}
 
 	log.Println("getting pull requests from", url)
-	resp, err := r.client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -108,7 +95,8 @@ func (r *GitHubRepository) pullRequests(name string) []*PullRequest {
 }
 
 func (r *GitHubRepository) shouldIgnore(p *gitHubPulls) bool {
-	return (r.MinAge > 0 && time.Now().Sub(p.CreatedAt) < r.MinAge) || (r.IgnoreAssigned && p.Assignee.Login != "")
+	return (r.Filter.MinAge.Duration > 0 && time.Now().Sub(p.CreatedAt) < r.Filter.MinAge.Duration) ||
+		(r.Filter.IgnoreAssigned && p.Assignee.Login != "")
 }
 
 type gitHubPulls struct {

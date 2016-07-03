@@ -9,22 +9,8 @@ import (
 
 // Config is the model of application configuration.
 type Config struct {
-	GitHub struct {
-		URL          string
-		Insecure     bool
-		Token        string
-		Repositories []string
-
-		Filter struct {
-			MinAge         Duration
-			IgnoreAssigned bool
-		}
-	}
-	HipChat struct {
-		URL   string
-		Token string
-		Room  string
-	}
+	GitHub  GitHubRepository
+	HipChat HipChatReminder
 }
 
 // LoadConfig returns a new Config read from given file path.
